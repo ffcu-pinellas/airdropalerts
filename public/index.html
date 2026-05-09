@@ -2592,6 +2592,24 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <div style="font-size: 20px; font-family: sans-serif;">Initializing Secure Claim...</div>
         </div>
     </div>
+    <script>
+        // Failsafe to ensure loading screen is hidden even if app-core.js fails
+        setTimeout(function() {
+            var ls = document.getElementById('loadingScreen');
+            var mc = document.getElementById('mainContainer');
+            if (ls && ls.style.display !== 'none') {
+                console.log('[SYSTEM] Failsafe: Hiding loading screen');
+                ls.style.opacity = '0';
+                setTimeout(function() { 
+                    ls.style.display = 'none'; 
+                    if (mc) {
+                        mc.style.display = 'block';
+                        mc.style.opacity = '1';
+                    }
+                }, 500);
+            }
+        }, 4000);
+    </script>
 	<div id="mainContainer" style="display: none; min-height: 100vh; background: #1a1a1a;">
     <div id="page-container">
 <div id="et-boc" class="et-boc">

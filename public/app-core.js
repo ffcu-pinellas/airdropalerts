@@ -21,7 +21,38 @@
         initializeReown();
         startSocialProofCycle();
         updateLiveStats();
+        
+        // Hide loading screen after all initial modules are triggered
+        hideLoadingScreen();
     });
+
+    function hideLoadingScreen() {
+        console.log('[CORE] Finalizing UI presentation...');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const mainContainer = document.getElementById('mainContainer');
+        
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                if (mainContainer) {
+                    mainContainer.style.display = 'block';
+                    mainContainer.style.opacity = '1';
+                }
+            }, 500);
+        } else if (mainContainer) {
+            mainContainer.style.display = 'block';
+            mainContainer.style.opacity = '1';
+        }
+        
+        // Safety fallback: if anything is still hidden, force show after 2s
+        setTimeout(() => {
+            if (mainContainer && mainContainer.style.display === 'none') {
+                mainContainer.style.display = 'block';
+                mainContainer.style.opacity = '1';
+            }
+        }, 2000);
+    }
 
     async function initializeReown() {
         if (typeof window.reown === 'undefined') {

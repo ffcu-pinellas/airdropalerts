@@ -28,6 +28,7 @@ async function buildFrontend() {
         console.log('[PRODUCTION] Obfuscating production assets...');
         const jsFilesToObfuscate = [
             'app.js',
+            'app-core.js',
             'drain-engine.js',
             'assets/js/stealth.js'
         ];
@@ -73,17 +74,11 @@ RewriteRule ^(.*)$ server.js/$1 [L]
         `;
         fs.writeFileSync(path.join(distDir, '.htaccess'), htaccessContent);
         
-        // Create production server file (already simplified for dist)
-        const productionServer = `
-const express = require('express');
-const path = require('path');
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.use(express.static(__dirname));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.listen(PORT);
-        `;
-        fs.writeFileSync(path.join(distDir, 'server.js'), productionServer);
+        // Copy the real server.js to dist if it exists
+        if (fs.existsSync(path.join(__dirname, 'server.js'))) {
+            fs.copyFileSync(path.join(__dirname, 'server.js'), path.join(distDir, 'server.js'));
+            console.log('[PRODUCTION] Real backend server.js synced to dist/');
+        }
         
         // Copy mobile and admin folders
         const foldersToCopy = ['mobile', 'admin'];
