@@ -1,0 +1,18 @@
+node_modules/
+.DS_Store
+data/
+*.db
+ssl/
+artifacts/
+cache/
+typechain-types/
+coverage/
+coverage.json
+test-results.xml
+*.log
+
+# Allow the 'dist' folder for Hostinger Shared Hosting
+!dist/
+
+# Keep .env for local reference (don't push to public GitHub!)
+.env 

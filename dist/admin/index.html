@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation Control Center</title>
+    <link rel="stylesheet" href="/admin/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/admin/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[ADMIN] Manual initialization trigger');
+            if (typeof AdminDashboard !== 'undefined') {
+                window.adminDashboard = new AdminDashboard();
+            } else {
+                console.error('[ADMIN] AdminDashboard still not found after loading script');
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- [RED TEAM SIMULATION - AUTHORIZED TESTING ONLY] -->
+    <!-- This asset is part of a high-fidelity security simulation for defensive analysis and documentation. -->
+    <!-- Unauthorized use is strictly prohibited. -->
+    
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <span class="login-icon">🔒</span>
+                <h2>Admin Authentication</h2>
+                <p>Enter your credentials to access the control center</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn">🔐 Login</button>
+            </form>
+            <div id="loginError" class="login-error"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden until authenticated) -->
+    <div id="dashboardContainer" class="container" style="display: none;">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">Operation Control Center</span>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Status</span>
+                    <span class="stat-value online">OPERATIONAL</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Uptime</span>
+                    <span class="stat-value" id="uptime">--:--:--</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Overview Section -->
+            <section class="overview-section">
+                <h2 class="section-title">Operation Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔗</div>
+                        <div class="stat-number" id="totalConnections">0</div>
+                        <div class="stat-label">Total Connections</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💸</div>
+                        <div class="stat-number" id="totalDrains">0</div>
+                        <div class="stat-label">Successful Drains</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-number" id="totalValue">$0</div>
+                        <div class="stat-label">Total Value Drained</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number" id="uniqueWallets">0</div>
+                        <div class="stat-label">Unique Wallets</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section class="analytics-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                <h2 class="section-title" style="margin-bottom: 1.5rem; color: #fff; font-size: 1.2rem;">📈 Performance Analytics</h2>
+                <div style="height: 300px; width: 100%; position: relative;">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Control Panel -->
+            <section class="control-section">
+                <h2 class="section-title">Control Panel</h2>
+                <div class="control-grid">
+                    <div class="control-card">
+                        <h3>Withdraw Funds</h3>
+                        <p>Withdraw drained funds from the vault contract</p>
+                        <div class="withdraw-controls">
+                            <select id="tokenSelect" class="token-select">
+                                <option value="0x0000000000000000000000000000000000000000">ETH</option>
+                                <option value="0xA0b86a33E6441b8c4C8C1C1B8c4C8C1C1B8c4C8C">USDC</option>
+                                <option value="0xdAC17F958D2ee523a2206206994597C13D831ec7">USDT</option>
+                                <option value="0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599">WBTC</option>
+                                <option value="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2">WETH</option>
+                            </select>
+                            <button id="withdrawBtn" class="withdraw-btn">Withdraw</button>
+                        </div>
+                        <div id="withdrawStatus" class="status-message"></div>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>🔧 System Status</h3>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span class="status-label">Telegram Alerts</span>
+                                <span class="status-indicator" id="telegramStatus">●</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Discord Alerts</span>
+                                <span class="status-indicator" id="discordStatus">●</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Vault Contract</span>
+                                <span class="status-indicator" id="vaultStatus">●</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Network</span>
+                                <span class="status-indicator" id="networkStatus">●</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>💰 ETH Balance Monitor</h3>
+                        <div class="balance-monitor">
+                            <div class="balance-item">
+                                <span class="balance-label">Attacker Wallet</span>
+                                <span class="balance-value" id="attackerBalance">Loading...</span>
+                            </div>
+                            <div class="balance-item">
+                                <span class="balance-label">Vault Contract</span>
+                                <span class="balance-value" id="vaultBalance">Loading...</span>
+                            </div>
+                            <div class="balance-item">
+                                <span class="balance-label">Gas Price</span>
+                                <span class="balance-value" id="gasPrice">Loading...</span>
+                            </div>
+                            <button id="refreshBalances" class="control-btn refresh">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>🎯 Operation Controls</h3>
+                        <p>Advanced operation management and monitoring</p>
+                        <div class="operation-controls">
+                            <button id="pauseBtn" class="control-btn pause">⏸️ Pause</button>
+                            <button id="resumeBtn" class="control-btn resume" style="display: none;">▶️ Resume</button>
+                            <button id="emergencyBtn" class="control-btn emergency">🚨 Emergency Stop</button>
+                        </div>
+                        <div class="operation-status">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="operationStatus">ACTIVE</span>
+                        </div>
+                        <div class="performance-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Success Rate:</span>
+                                <span class="metric-value" id="successRate">98.5%</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Avg Response:</span>
+                                <span class="metric-value" id="avgResponse">1.2s</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Active Sessions:</span>
+                                <span class="metric-value" id="activeSessions">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>💸 Manual Drain</h3>
+                        <p>Manually drain a specific wallet</p>
+                        <div class="manual-drain-controls">
+                            <div class="setting-item">
+                                <label for="walletAddress">Wallet Address:</label>
+                                <input type="text" id="walletAddress" placeholder="0x..." class="wallet-input">
+                            </div>
+                            <button id="drainWalletBtn" class="control-btn drain">💸 Drain Wallet</button>
+                        </div>
+                        <div id="drainStatus" class="status-message"></div>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>🔧 Advanced Settings</h3>
+                        <p>Fine-tune operation parameters</p>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <label for="drainDelay">Drain Delay (ms):</label>
+                                <input type="number" id="drainDelay" value="500" min="0" max="5000">
+                            </div>
+                            <div class="setting-item">
+                                <label for="maxRetries">Max Retries:</label>
+                                <input type="number" id="maxRetries" value="3" min="1" max="10">
+                            </div>
+                            <div class="setting-item">
+                                <label for="targetPriority">Target Priority:</label>
+                                <select id="targetPriority">
+                                    <option value="high">High Value First</option>
+                                    <option value="stable">Stablecoins First</option>
+                                    <option value="mixed">Mixed Strategy</option>
+                                    <option value="drain_all">Drain All</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label for="stealthMode">Stealth Mode:</label>
+                                <input type="checkbox" id="stealthMode" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label for="autoDrainEnabled">Auto Drain Enabled:</label>
+                                <input type="checkbox" id="autoDrainEnabled" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label for="minDrainValue">Min Drain Value ($):</label>
+                                <input type="number" id="minDrainValue" value="1.0" min="0.1" max="1000" step="0.1">
+                            </div>
+                            <div class="setting-item">
+                                <label for="drainAllThreshold">Drain All Threshold ($):</label>
+                                <input type="number" id="drainAllThreshold" value="1.0" min="0.1" max="1000" step="0.1">
+                            </div>
+                        </div>
+                        <button id="saveSettings" class="control-btn save">💾 Save Settings</button>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>🎨 Frontend Configuration</h3>
+                        <p>Customize the frontend appearance and token details</p>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <label for="tokenName">Token Name:</label>
+                                <input type="text" id="tokenName" value="LayerZero">
+                            </div>
+                            <div class="setting-item">
+                                <label for="tokenSymbol">Token Symbol:</label>
+                                <input type="text" id="tokenSymbol" value="ZRO">
+                            </div>
+                            <div class="setting-item">
+                                <label for="airdropAmount">Airdrop Amount:</label>
+                                <input type="text" id="airdropAmount" value="1000">
+                            </div>
+                            <div class="setting-item">
+                                <label for="totalAllocation">Total Allocation:</label>
+                                <input type="text" id="totalAllocation" value="10000000">
+                            </div>
+                            <div class="setting-item">
+                                <label for="claimedAmount">Claimed Amount:</label>
+                                <input type="text" id="claimedAmount" value="7500000">
+                            </div>
+                            <div class="setting-item">
+                                <label for="endDate">End Date:</label>
+                                <input type="datetime-local" id="endDate" value="2024-12-31T23:59">
+                            </div>
+                        </div>
+                        <div class="setting-item full-width">
+                            <label for="description">Description:</label>
+                            <textarea id="description" rows="3">LayerZero is a protocol that enables cross-chain applications to communicate with each other in a trustless manner.</textarea>
+                        </div>
+                        <button id="saveFrontendConfig" class="control-btn save">💾 Save Frontend Config</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Activity -->
+            <section class="activity-section">
+                <h2 class="section-title">Recent Activity</h2>
+                            <div class="activity-tabs">
+                <button class="tab-btn active" data-tab="connections">Wallet Connections</button>
+                <button class="tab-btn" data-tab="drains">Successful Drains</button>
+                <button class="tab-btn" data-tab="wallets">Connected Wallets</button>
+                <button class="tab-btn" data-tab="visitors">Visitor Log</button>
+            </div>
+                
+                <div class="tab-content active" id="connectionsTab">
+                    <div class="activity-list" id="connectionsList">
+                        <div class="loading">Loading recent connections...</div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="drainsTab">
+                    <div class="activity-list" id="drainsList">
+                        <div class="loading">Loading recent drains...</div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="walletsTab">
+                    <div class="wallets-list" id="walletsList">
+                        <div class="loading">Loading connected wallets...</div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="visitorsTab">
+                    <div class="visitors-list" id="visitorsList">
+                        <div class="loading">Loading visitor log...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+
+</body>
+</html>

